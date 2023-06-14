@@ -13,6 +13,9 @@
 
 sleep 30
 
+### Install new kernel
+sudo amazon-linux-extras install kernel-5.15 -y
+
 ### Install Docker
 sudo yum update -y
 sudo yum -y install docker
