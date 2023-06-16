@@ -33,7 +33,7 @@ while getopts 'a:d:p:s:' OPTION; do
       echo "-p <Primary IP>               Set the Harbor primary IP. This should be the IP your Kubernetes nodes connect to."
       echo "-s <Secondary IP>             Set the Harbor secondary IP. This could be the IP of your management network or Internet path to be able to pull container images from external sources."
       echo ""
-      echo "-p <Primary IP> and -s <Secondary IP> are optional and only needed to configure a multi-homed instance that should listen on two IPs (Primary and secondary)."
+      echo "-p <Primary IP> and -s <Secondary IP> are optional and only needed when configuring a multi-homed instance that listen on two IPs (Primary and secondary)."
       echo "Without setting -p or -s the instance VNI IP ($VNI_IP) will be configured as the Harbor IP."
       exit 1
       ;;
