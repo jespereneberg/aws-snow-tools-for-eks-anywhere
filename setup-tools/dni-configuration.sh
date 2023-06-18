@@ -1,8 +1,36 @@
-# Mac address of the direct network interface. 
-# You got this when you created the direct network interface.
-DNI_ETH=$1
-IP=
-PREFIX=
+while getopts 'e:i:p:' OPTION; do
+  case "$OPTION" in
+    e)
+      DNI_ETH="$OPTARG"
+      ;;
+    i)
+      IP="$OPTARG"
+      ;;
+    p)
+      PREFIX="$OPTARG"
+      ;;
+    *)
+      echo "script usage: $(basename $0) [-e <interface> ] [-i <IP>] [-p <Prefix>]"
+      echo "-e <interface> Interface (ethX, enpX) of the DNI to configure."
+      echo "-i <ip>        IP to configure on the Interface."      
+      echo "-p <Prefix>    Prefix to configure on the Interface."
+      echo ""
+      echo "-i <ip> and -p <prefix> are optional. Interface will be configured as DHCP without."
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z "$DNI_ETH" ]; then
+        echo "-e needs to be set."
+fi
+
+if [ -z "$IP" ] && [ -z "$PREFIX" ]; then
+  true
+elif [ -z "$IP" ] || [ -z "$PREFIX" ]; then
+  echo "-i and -p need to be configured together."
+  exit 1
+fi
 
 # Configure routing so that packets meant for the VNI always are sent through eth0.
 PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
