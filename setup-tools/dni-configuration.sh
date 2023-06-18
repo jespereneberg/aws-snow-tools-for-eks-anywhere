@@ -22,11 +22,11 @@ while getopts 'e:i:p:' OPTION; do
 done
 
 if [ -z "$DNI_ETH" ]; then
-        echo "-e needs to be set."
+  echo "-e needs to be set."
 fi
 
 if [ -z "$IP" ] && [ -z "$PREFIX" ]; then
-  true
+  STATIC=false
 elif [ -z "$IP" ] || [ -z "$PREFIX" ]; then
   echo "-i and -p need to be configured together."
   exit 1
@@ -42,9 +42,9 @@ echo "169.254.169.254 dev eth0" >> /etc/sysconfig/network-scripts/route-eth0
 
 # Query the persistent DNI name, assigned by udev via ec2net helper.
 #   changable in /etc/udev/rules.d/70-persistent-net.rules
-DNI_MAC=$(ip link show eth1 | awk '/link\/ether/ { print $2 }')
+DNI_MAC=$(ip link show $DNI_ETH | awk '/link\/ether/ { print $2 }')
 
-if [$STATIC = true]; then
+if $STATIC; then
 # Configure DNI to use static network settings.
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
   DEVICE="$DNI_ETH"
@@ -52,11 +52,11 @@ cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
   HWADDR=$DNI_MAC
   ONBOOT=yes
   NOZEROCONF=yes
-  IPADDR=$IP #172.16.2.184
-  PREFIX=$PREFIX #24
+  IPADDR=$IP
+  PREFIX=$PREFIX
   TYPE=Ethernet
   MAINROUTETABLE=no
-  EOF
+EOF
 else
 # Configure DNI to use DHCP on boot.
   cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
@@ -68,9 +68,8 @@ else
   BOOTPROTO=dhcp
   TYPE=Ethernet
   MAINROUTETABLE=no
-  EOF
+EOF
 fi
 
 # Make all changes live.
 systemctl restart network
-            
