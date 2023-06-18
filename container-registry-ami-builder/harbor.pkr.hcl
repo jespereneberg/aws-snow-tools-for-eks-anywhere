@@ -56,11 +56,18 @@ build {
     destination = "/tmp/images.txt"
   }
 
+  provisioner "file" {
+    source      = "../setup-tools/dni-configuration.sh"
+    destination = "/tmp/dni-configuration.sh"
+  }
+
   provisioner "shell" {
     inline = [
       "mv /tmp/images ~/",
       "mv /tmp/harbor-configuration.sh ~/",
-      "mv /tmp/images.txt ~/"
+      "mv /tmp/images.txt ~/",
+      "mv /tmp/dni-configuration.sh ~/",
+      "chmod +x ~/*.sh" 
     ]
   }
 
