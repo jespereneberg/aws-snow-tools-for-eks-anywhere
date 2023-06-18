@@ -34,7 +34,7 @@ while getopts 'a:d:p:s:' OPTION; do
       echo "-s <Secondary IP>             Set the Harbor secondary IP. This could be the IP of your management network or Internet path to be able to pull container images from external sources."
       echo ""
       echo "-p <Primary IP> and -s <Secondary IP> are optional and only needed when configuring a multi-homed instance that listen on two IPs (Primary and secondary)."
-      echo "Without setting -p or -s the instance VNI IP ($VNI_IP) will be configured as the Harbor IP."
+      echo "Without setting -p or -s the instance VNI IP ($VNI_IP) will be configured as the Harbor IP and will be the ony IP added to the TLS certificate."
       exit 1
       ;;
   esac
