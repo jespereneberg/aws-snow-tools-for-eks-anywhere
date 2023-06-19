@@ -29,7 +29,7 @@ while getopts 'a:d:p:s:' OPTION; do
     *)
       echo "script usage: $(basename $0) [-a <Harbor UI Admin Password>] [-d <Harbor DB Root Password>] [-p <PRIMARY IP>] [-s <SECONDARY IP>]"
       echo "-a <Harbor UI Admin Password> Set the Harbor UI Admin Password"
-      echo "-a <Harbor DB root Password>  Set the Harbor DB root Password"      
+      echo "-d <Harbor DB root Password>  Set the Harbor DB root Password"      
       echo "-p <Primary IP>               Set the Harbor primary IP. This should be the IP your Kubernetes nodes connect to."
       echo "-s <Secondary IP>             Set the Harbor secondary IP. This could be the IP of your management network or Internet path to be able to pull container images from external sources."
       echo ""
@@ -48,10 +48,10 @@ fi
 if [ -z "$DB_PASSWORD" ]; then
         read -p "Please set up the Harbor DB Root Password: " DB_PASSWORD
 fi
-if [ -z $PRIMARY_IP]; then
+if [ -z "$PRIMARY_IP" ]; then
   PRIMARY_IP=$VNI_IP
 fi
-if [ -z $SECONDARY_IP]; then
+if [ -z "$SECONDARY_IP" ]; then
   SECONDARY_IP=$VNI_IP
 fi
 
