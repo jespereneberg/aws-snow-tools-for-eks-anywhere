@@ -143,6 +143,7 @@ curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects
 curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects -H 'Content-Type: application/json' -d '{ "project_name": "isovalent", "public": true }'
 curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects -H 'Content-Type: application/json' -d '{ "project_name": "bottlerocket", "public": true }'
 curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects -H 'Content-Type: application/json' -d '{ "project_name": "cilium-chart", "public": true }'
+curl -u admin:$ADMIN_PASSWORD -k -X 'PUT' https://$PRIMARY_IP/api/v2.0/projects/library -H 'Content-Type: application/json' -d '{ "public": true }'
 
 ## login to harbor from local docker
 sleep 30
@@ -161,7 +162,7 @@ for image in $IMAGES; do
     docker tag $image $PRIMARY_IP/library/$image
 
     # Push the image to a registry
-    docker push $PRIMARY_IP/library/$image
+    sudo docker push $PRIMARY_IP/library/$image
 done
 
 echo "All images are uploaded"
