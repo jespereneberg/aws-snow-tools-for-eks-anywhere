@@ -136,7 +136,13 @@ sed "s/Harbor12345/$ADMIN_PASSWORD/" > /home/ec2-user/harbor/harbor.yml
 ## Run the harbor install script
 sudo /home/ec2-user/harbor/prepare
 sudo /home/ec2-user/harbor/install.sh
-sleep 30
+
+## Waiting for harbor to start
+while ! curl -sS $PRIMARY_IP --connect-timeout 1; do 
+  echo "Harbor not yet started. Waiting for it to become avaiable."
+  sleep 1
+done
+
 ## Create needed Projects in Harbor
 curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects -H 'Content-Type: application/json' -d '{ "project_name": "eks-anywhere", "public": true }'
 curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects -H 'Content-Type: application/json' -d '{ "project_name": "eks-distro", "public": true }'
@@ -146,7 +152,6 @@ curl -u admin:$ADMIN_PASSWORD -k -X 'POST' https://$PRIMARY_IP/api/v2.0/projects
 curl -u admin:$ADMIN_PASSWORD -k -X 'PUT' https://$PRIMARY_IP/api/v2.0/projects/library -H 'Content-Type: application/json' -d '{ "public": true }'
 
 ## login to harbor from local docker
-sleep 30
 sudo docker login $PRIMARY_IP --username admin --password $ADMIN_PASSWORD
 
 ## Load images from images file from customer
