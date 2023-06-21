@@ -42,6 +42,10 @@ echo "169.254.169.254 dev eth0" >> /etc/sysconfig/network-scripts/route-eth0
 
 # Query the persistent DNI name, assigned by udev via ec2net helper.
 #   changable in /etc/udev/rules.d/70-persistent-net.rules
+while ! $(ip link show $DNI_ETH);do
+    echo "$DNI_ETH does not exist yet. Waiting for it to become avaiable."
+    sleep 1
+done
 DNI_MAC=$(ip link show $DNI_ETH | awk '/link\/ether/ { print $2 }')
 
 if $STATIC; then
