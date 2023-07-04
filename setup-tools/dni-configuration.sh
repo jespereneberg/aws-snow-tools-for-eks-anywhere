@@ -1,4 +1,16 @@
-while getopts 'e:i:p:' OPTION; do
+# Script to configure DNI interfaces. Instead of the sample configuration script here: https://docs.aws.amazon.com/snowball/latest/developer-guide/network-config-ec2.html#snowcone-setup-dni
+# which uses Interface MAC as input, this script uses interface-name, eg ethX.
+#
+# script usage"
+# -e <interface>   Interface (ethX, enpX) of the DNI to configure."
+# -i <ip>          IP to configure on the Interface. Default: DHCP."      
+# -p <Prefix>      Prefix to configure on the Interface. Default: DHCP."
+# -g <ip>          Default gateway IP. Default: DHCP."
+# -d <true/false>  If interface should be used as default gateway. Default: false."
+#
+########################################################################################
+#!/bin/bash
+while getopts 'e:i:p:g:d:' OPTION; do
   case "$OPTION" in
     e)
       DNI_ETH="$OPTARG"
@@ -9,13 +21,20 @@ while getopts 'e:i:p:' OPTION; do
     p)
       PREFIX="$OPTARG"
       ;;
+    g)
+      DEF_GATEWAY_IP="$OPTARG"
+      ;;
+    d) 
+      DEF_GATEWAY_BOOLEAN="$OPTARG"
+      DEF_GATEWAY_BOOLEAN=$(echo $DEF_GATEWAY_BOOLEAN | tr '[:upper:]' '[:lower:]')
+      ;;
     *)
-      echo "script usage: $(basename $0) [-e <interface> ] [-i <IP>] [-p <Prefix>]"
-      echo "-e <interface> Interface (ethX, enpX) of the DNI to configure."
-      echo "-i <ip>        IP to configure on the Interface."      
-      echo "-p <Prefix>    Prefix to configure on the Interface."
-      echo ""
-      echo "-i <ip> and -p <prefix> are optional. Interface will be configured as DHCP without."
+      echo "script usage: $(basename $0) [-e <interface> ] [-i <IP>] [-p <Prefix>] [-g <IP>] [-d <boolean>]"
+      echo "-e <interface>   Interface (ethX, enpX) of the DNI to configure."
+      echo "-i <ip>          IP to configure on the Interface. Default: DHCP."      
+      echo "-p <Prefix>      Prefix to configure on the Interface. Default: DHCP."
+      echo "-g <ip>          Default gateway IP. Default: DHCP."
+      echo "-d <true/false>  If interface should be used as default gateway. Default: false."
       exit 1
       ;;
   esac
@@ -23,6 +42,7 @@ done
 
 if [ -z "$DNI_ETH" ]; then
   echo "-e needs to be set."
+  exit 1
 fi
 
 if [ -z "$IP" ] && [ -z "$PREFIX" ]; then
@@ -31,6 +51,11 @@ elif [ -z "$IP" ] || [ -z "$PREFIX" ]; then
   echo "-i and -p need to be configured together."
   exit 1
 fi
+
+while ! ip link show $DNI_ETH;do
+    echo "$DNI_ETH does not exist yet. Waiting for it to become avaiable."
+    sleep 1
+done
 
 # Configure routing so that packets meant for the VNI always are sent through eth0.
 PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
@@ -41,39 +66,43 @@ echo "default via $PRIVATE_GATEWAY dev eth0 table $ROUTE_TABLE" > /etc/sysconfig
 echo "169.254.169.254 dev eth0" >> /etc/sysconfig/network-scripts/route-eth0
 
 # Query the persistent DNI name, assigned by udev via ec2net helper.
-#   changable in /etc/udev/rules.d/70-persistent-net.rules
-while ! ip link show $DNI_ETH;do
-    echo "$DNI_ETH does not exist yet. Waiting for it to become avaiable."
-    sleep 1
-done
 DNI_MAC=$(ip link show $DNI_ETH | awk '/link\/ether/ { print $2 }')
 
 if $STATIC; then
 # Configure DNI to use static network settings.
 cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
-  DEVICE="$DNI_ETH"
-  NAME="$DNI_ETH"
-  HWADDR=$DNI_MAC
-  ONBOOT=yes
-  NOZEROCONF=yes
-  IPADDR=$IP
-  PREFIX=$PREFIX
-  TYPE=Ethernet
-  MAINROUTETABLE=no
+DEVICE="$DNI_ETH"
+NAME="$DNI_ETH"
+HWADDR=$DNI_MAC
+ONBOOT=yes
+NOZEROCONF=yes
+BOOTPROTO=none
+NM_CONTROLLED=no
+IPADDR=$IP
+PREFIX=$PREFIX
+TYPE=Ethernet
+MAINROUTETABLE=no
+PERSISTENT_DHCLIENT=no
 EOF
+if [ -n "$DEF_GATEWAY_IP" ]; then
+  echo "GATEWAY=$DEF_GATEWAY_IP" >> /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
+fi
+if [ "$DEF_GATEWAY_BOOLEAN" ]; then
+  echo "DEFROUTE=yes" >> /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
+fi
 else
 # Configure DNI to use DHCP on boot.
-  cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
-  DEVICE="$DNI_ETH"
-  NAME="$DNI_ETH"
-  HWADDR=$DNI_MAC
-  ONBOOT=yes
-  NOZEROCONF=yes
-  BOOTPROTO=dhcp
-  TYPE=Ethernet
-  MAINROUTETABLE=no
+cat << EOF > /etc/sysconfig/network-scripts/ifcfg-$DNI_ETH
+DEVICE="$DNI_ETH"
+NAME="$DNI_ETH"
+HWADDR=$DNI_MAC
+ONBOOT=yes
+NOZEROCONF=yes
+BOOTPROTO=dhcp
+TYPE=Ethernet
+MAINROUTETABLE=no
 EOF
 fi
 
 # Make all changes live.
-systemctl restart network
+ifdown $DNI_ETH && ifup $DNI_ETH
